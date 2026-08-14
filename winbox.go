@@ -655,7 +655,7 @@ func (w *WinBox) Fullscreen() *WinBox {
 }
 
 // Close removes the window. When the OnClose callback returns true the
-// close is cancelled; Close then returns true. Pass force to signal the
+// close is canceled; Close then returns true. Pass force to signal the
 // callback that closing must not be prevented.
 func (w *WinBox) Close(force bool) bool {
 	if w.OnClose != nil && w.OnClose(w, force) {
@@ -751,35 +751,33 @@ func (w *WinBox) Resize(width, height Unit) *WinBox {
 }
 
 // applyPos re-applies the stored position (the JS move() no-arg path).
-func (w *WinBox) applyPos() *WinBox {
-	return w.Move(Unit{}, Unit{})
+func (w *WinBox) applyPos() {
+	w.Move(Unit{}, Unit{})
 }
 
 // applySize re-applies the stored size (the JS resize() no-arg path).
-func (w *WinBox) applySize() *WinBox {
-	return w.Resize(Unit{}, Unit{})
+func (w *WinBox) applySize() {
+	w.Resize(Unit{}, Unit{})
 }
 
 // moveRaw positions the window without touching the stored X/Y
 // (the JS move(x, y, true) path).
-func (w *WinBox) moveRaw(x, y float64) *WinBox {
+func (w *WinBox) moveRaw(x, y float64) {
 	setStyle(w.DOM, "left", fmt.Sprintf("%vpx", x))
 	setStyle(w.DOM, "top", fmt.Sprintf("%vpx", y))
 	if w.OnMove != nil {
 		w.OnMove(w, x, y)
 	}
-	return w
 }
 
 // resizeRaw sizes the window without touching the stored Width/Height
 // (the JS resize(w, h, true) path).
-func (w *WinBox) resizeRaw(width, height float64) *WinBox {
+func (w *WinBox) resizeRaw(width, height float64) {
 	setStyle(w.DOM, "width", fmt.Sprintf("%vpx", width))
 	setStyle(w.DOM, "height", fmt.Sprintf("%vpx", height))
 	if w.OnResize != nil {
 		w.OnResize(w, width, height)
 	}
-	return w
 }
 
 // AddControl adds a custom button to the titlebar controls.

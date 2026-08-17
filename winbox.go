@@ -137,6 +137,12 @@ type WinBox struct {
 	X, Y                float64
 	Width, Height       float64
 	MinWidth, MinHeight float64
+	// MaxWidth and MaxHeight cap the window, or are zero for no cap — in which
+	// case the limit is whatever the viewport allows at the time, recomputed as
+	// the page changes size. They are not filled in with the viewport at
+	// construction: a cap taken from how big the page was once outlives the
+	// page it was measured from, and the window then refuses to be dragged any
+	// larger after a zoom or a rotation even though there is room.
 	MaxWidth, MaxHeight float64
 	Top, Right          float64
 	Bottom, Left        float64
@@ -267,13 +273,21 @@ func New(opts *Options) *WinBox {
 	viewportW := rootW - left - right
 	viewportH := rootH - top - bottom
 
+	// maxWidth and maxHeight size the window at birth; MaxWidth and MaxHeight
+	// cap it forever after, and the two must not be confused. Only a caller
+	// that asked for a maximum gets one: the viewport is not a maximum, it is
+	// how big the page happened to be at this moment, and freezing it as a cap
+	// is what stops a window being dragged any bigger after the page grows —
+	// by a zoom, a rotation, or a window being made larger.
 	maxWidth := viewportW
 	if !opts.MaxWidth.falsy() {
 		maxWidth = opts.MaxWidth.parse(viewportW, 0)
+		w.MaxWidth = maxWidth
 	}
 	maxHeight := viewportH
 	if !opts.MaxHeight.falsy() {
 		maxHeight = opts.MaxHeight.parse(viewportH, 0)
+		w.MaxHeight = maxHeight
 	}
 	minWidth := 150.0
 	if !opts.MinWidth.falsy() {
@@ -323,8 +337,6 @@ func New(opts *Options) *WinBox {
 	w.Height = height
 	w.MinWidth = minWidth
 	w.MinHeight = minHeight
-	w.MaxWidth = maxWidth
-	w.MaxHeight = maxHeight
 	w.Top = top
 	w.Right = right
 	w.Bottom = bottom
@@ -728,11 +740,19 @@ func (w *WinBox) Resize(width, height Unit) *WinBox {
 		wv = w.Width
 		hv = w.Height
 	} else {
+		// A percentage is of the room the window has now, not of a maximum it
+		// may not have been given.
 		if !width.falsy() {
-			wv = width.parse(w.MaxWidth, 0)
+			wv = width.parse(rootW-w.Left-w.Right, 0)
 		}
 		if !height.falsy() {
-			hv = height.parse(w.MaxHeight, 0)
+			hv = height.parse(rootH-w.Top-w.Bottom, 0)
+		}
+		if w.MaxWidth > 0 {
+			wv = math.Min(wv, w.MaxWidth)
+		}
+		if w.MaxHeight > 0 {
+			hv = math.Min(hv, w.MaxHeight)
 		}
 		w.Width = wv
 		w.Height = hv

@@ -266,13 +266,24 @@ func addWindowListener(w *WinBox, dir string) {
 			}
 		}
 
+		// The limit is what the viewport allows now, which is read live and so
+		// follows a zoom or a rotation. A caller's own maximum, if it set one,
+		// applies on top of that.
 		if resizeW {
-			w.Width = math.Max(math.Min(math.Min(w.Width, w.MaxWidth), rootW-w.X-w.Right), w.MinWidth)
+			limit := rootW - w.X - w.Right
+			if w.MaxWidth > 0 && w.MaxWidth < limit {
+				limit = w.MaxWidth
+			}
+			w.Width = math.Max(math.Min(w.Width, limit), w.MinWidth)
 			resizeW = w.Width != oldW
 		}
 
 		if resizeH {
-			w.Height = math.Max(math.Min(math.Min(w.Height, w.MaxHeight), rootH-w.Y-w.Bottom), w.MinHeight)
+			limit := rootH - w.Y - w.Bottom
+			if w.MaxHeight > 0 && w.MaxHeight < limit {
+				limit = w.MaxHeight
+			}
+			w.Height = math.Max(math.Min(w.Height, limit), w.MinHeight)
 			resizeH = w.Height != oldH
 		}
 

@@ -17,13 +17,21 @@ func style(w *WinBox, name string) string {
 // state that would otherwise carry between tests.
 func fresh(t *testing.T) {
 	t.Helper()
+	closeAll()
 	installFakeDOM()
-	stackWin = nil
-	stackMin = nil
-
 	idCounter = 0
 	indexCounter = 10
-	t.Cleanup(func() { stackWin, stackMin = nil, nil })
+	t.Cleanup(closeAll)
+}
+
+// closeAll shuts every open window, which is what takes its element back out
+// of the page. Under a real browser the page belongs to the test harness, so
+// the windows have to be removed one by one rather than by clearing the body.
+func closeAll() {
+	for _, w := range append([]*WinBox(nil), stackWin...) {
+		w.Close(true)
+	}
+	stackWin, stackMin, stackDock = nil, nil, nil
 }
 
 // ── Unit ─────────────────────────────────────────────────────────────────────
@@ -114,11 +122,14 @@ func TestResizeInPercentIsOfTheRoomAvailable(t *testing.T) {
 	fresh(t)
 	w := New(&Options{Title: "t", Width: Px(100), Height: Px(100)})
 	w.Resize(Pct(50), Pct(25))
-	if w.Width != fakeRootW/2 {
-		t.Errorf("50%% of %v gave %v", fakeRootW, w.Width)
+	// Rounded the way the code rounds — Trunc(x + 0.5) — since a viewport with
+	// an odd dimension does not divide evenly and the browser's is whatever it
+	// is.
+	if want := math.Trunc(rootW/100*50 + 0.5); w.Width != want {
+		t.Errorf("50%% of %v gave %v, want %v", rootW, w.Width, want)
 	}
-	if w.Height != fakeRootH/4 {
-		t.Errorf("25%% of %v gave %v", fakeRootH, w.Height)
+	if want := math.Trunc(rootH/100*25 + 0.5); w.Height != want {
+		t.Errorf("25%% of %v gave %v, want %v", rootH, w.Height, want)
 	}
 }
 
@@ -182,10 +193,10 @@ func TestMoveCenterUsesTheWindowSize(t *testing.T) {
 	fresh(t)
 	w := New(&Options{Title: "t", Width: Px(400), Height: Px(200)})
 	w.Move(Center, Center)
-	if want := math.Trunc((fakeRootW-400)/2 + 0.5); w.X != want {
+	if want := math.Trunc((rootW-400)/2 + 0.5); w.X != want {
 		t.Errorf("centered x is %v, want %v", w.X, want)
 	}
-	if want := math.Trunc((fakeRootH-200)/2 + 0.5); w.Y != want {
+	if want := math.Trunc((rootH-200)/2 + 0.5); w.Y != want {
 		t.Errorf("centered y is %v, want %v", w.Y, want)
 	}
 }
@@ -408,13 +419,23 @@ func TestMaximizeAndRestoreKeepTheOriginalGeometry(t *testing.T) {
 
 // ── CSS ──────────────────────────────────────────────────────────────────────
 
+// The stylesheet goes in once however many windows are built. Counted by its
+// own id rather than by the size of the head, since a real page has other
+// things in there.
 func TestInjectCSSOnlyAddsTheStylesheetOnce(t *testing.T) {
 	fresh(t)
 	for i := 0; i < 5; i++ {
 		InjectCSS()
 	}
-	if n := document.Get("head").Get("children").Length(); n != 1 {
-		t.Errorf("the head has %d children after five InjectCSS calls, want 1", n)
+	head := document.Get("head")
+	n := 0
+	for i := 0; i < head.Get("children").Length(); i++ {
+		if head.Get("children").Index(i).Get("id").String() == styleID {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("the head holds %d copies of the stylesheet after five InjectCSS calls, want 1", n)
 	}
 }
 

@@ -222,20 +222,34 @@ const fakeDOMSource = `
 })()
 `
 
-// installFakeDOM installs the fake document and window and re-runs the
-// package's own setup against them.
+// installFakeDOM makes sure there is a document to work against and re-runs
+// the package's own setup against it.
+//
+// Under a real browser — `go test -exec wasmbrowsertest` — the real one is
+// used and the fake is not installed at all. window cannot be replaced there
+// anyway. Running the same tests both ways is what keeps the fake honest:
+// anything it gets wrong shows up as a test that passes under Node and fails
+// in the browser.
 func installFakeDOM() {
-	js.Global().Call("eval", fakeDOMSource)
+	if !realDOM() {
+		js.Global().Call("eval", fakeDOMSource)
+	}
 	document = js.Global().Get("document")
 	window = js.Global().Get("window")
-	body = js.Global().Get("document").Get("body")
+	body = document.Get("body")
+	// The body is deliberately left alone. Under wasmbrowsertest the page is
+	// the test harness's own, and clearing it takes the harness's elements with
+	// it — the tests then pass and the run hangs afterwards. Windows left over
+	// from a previous test are closed in fresh() instead, which removes exactly
+	// the elements this package created.
 	setup()
 	initRoot()
 }
 
-// rootSize is what the fake document reports as the available area, which is
-// what percentage units are a percentage of.
-const (
-	fakeRootW = 1280
-	fakeRootH = 800
-)
+// realDOM reports whether this is running in a browser rather than in Node.
+func realDOM() bool {
+	d := js.Global().Get("document")
+	return d.Truthy() && d.Get("createElement").Type() == js.TypeFunction &&
+		js.Global().Get("window").Truthy() &&
+		js.Global().Get("window").Get("getComputedStyle").Type() == js.TypeFunction
+}

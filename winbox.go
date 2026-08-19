@@ -729,6 +729,14 @@ func (w *WinBox) Fullscreen() *WinBox {
 // close is canceled; Close then returns true. Pass force to signal the
 // callback that closing must not be prevented.
 func (w *WinBox) Close(force bool) bool {
+	// Closing clears DOM and Body below, so a second close would call Unmount
+	// on an undefined element and panic — taking the page with it. A host that
+	// closes from both a button and an event reaches this, and the second call
+	// has nothing left to do.
+	if !w.DOM.Truthy() {
+		return false
+	}
+
 	if w.OnClose != nil && w.OnClose(w, force) {
 		return true
 	}

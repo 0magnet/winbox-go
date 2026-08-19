@@ -108,6 +108,15 @@ type Options struct {
 	Hidden bool
 	Modal  bool
 
+	// Dock pins the window to an edge of the viewport. The zero value,
+	// EdgeNone, leaves it floating — docking is opt-in and changes nothing for
+	// callers that do not ask for it. DockSize is the thickness across that
+	// edge, defaulting to whatever the window's extent along that axis would
+	// have been. See dock.go.
+	Dock     Edge
+	DockSize Unit
+	DockMode DockMode
+
 	Background string
 	Border     float64
 	Header     float64
@@ -126,6 +135,8 @@ type Options struct {
 	OnHide       func(w *WinBox)
 	OnShow       func(w *WinBox)
 	OnLoad       func(w *WinBox)
+	OnDock       func(w *WinBox, edge Edge)
+	OnUndock     func(w *WinBox)
 }
 
 // WinBox is one window instance.
@@ -157,6 +168,14 @@ type WinBox struct {
 	Hidden  bool
 	Focused bool
 
+	// Docking state. dock is EdgeNone unless Dock was asked for; dockThick is
+	// the extent across the docked edge, and preDock is the floating geometry
+	// to put back on Undock. See dock.go.
+	dock      Edge
+	dockThick float64
+	dockMode  DockMode
+	preDock   dockGeom
+
 	// Callbacks may be replaced at any time after creation.
 	OnClose      func(w *WinBox, force bool) bool
 	OnFocus      func(w *WinBox)
@@ -170,6 +189,8 @@ type WinBox struct {
 	OnHide       func(w *WinBox)
 	OnShow       func(w *WinBox)
 	OnLoad       func(w *WinBox)
+	OnDock       func(w *WinBox, edge Edge)
+	OnUndock     func(w *WinBox)
 
 	funcs []js.Func
 }
@@ -354,6 +375,8 @@ func New(opts *Options) *WinBox {
 	w.OnRestore = opts.OnRestore
 	w.OnHide = opts.OnHide
 	w.OnShow = opts.OnShow
+	w.OnDock = opts.OnDock
+	w.OnUndock = opts.OnUndock
 	if w.OnLoad == nil {
 		w.OnLoad = opts.OnLoad
 	}
@@ -372,11 +395,20 @@ func New(opts *Options) *WinBox {
 		}
 	}
 
-	if opts.Max {
+	w.dockMode = opts.DockMode
+
+	switch {
+	case opts.Dock != EdgeNone:
+		// Placed before docking so the geometry Undock restores is the one the
+		// options described, not whatever the strip happens to be.
+		w.applySize()
+		w.applyPos()
+		w.Dock(opts.Dock, opts.DockSize)
+	case opts.Max:
 		w.Maximize()
-	} else if opts.Min {
+	case opts.Min:
 		w.Minimize()
-	} else {
+	default:
 		w.applySize()
 		w.applyPos()
 	}
@@ -543,6 +575,10 @@ func (w *WinBox) Hide() *WinBox {
 		}
 		w.Hidden = true
 		w.AddClass("hide")
+		// A dock put away gives its strip back to everyone else.
+		if len(stackDock) > 0 {
+			updateDocks()
+		}
 	}
 	return w
 }
@@ -555,6 +591,9 @@ func (w *WinBox) Show() *WinBox {
 		}
 		w.Hidden = false
 		w.RemoveClass("hide")
+		if len(stackDock) > 0 {
+			updateDocks()
+		}
 	}
 	return w
 }
@@ -577,6 +616,13 @@ func (w *WinBox) Minimize() *WinBox {
 		w.AddClass("min")
 		w.Min = true
 
+		// A minimized dock stops reserving its strip, so the docks behind it and
+		// the content area both grow. updateMinStack ran above with w.Min still
+		// false, so this also re-runs it with the truth.
+		if w.dock != EdgeNone {
+			updateDocks()
+		}
+
 		if w.Focused {
 			w.Blur()
 			focusNext()
@@ -598,8 +644,14 @@ func (w *WinBox) Restore() *WinBox {
 
 	if w.Min {
 		removeMinStack(w)
-		w.applySize()
-		w.applyPos()
+		// A window that was docked when it was minimized goes back to its edge,
+		// not to the floating geometry Undock is holding for it.
+		if w.dock != EdgeNone {
+			updateDocks()
+		} else {
+			w.applySize()
+			w.applyPos()
+		}
 		if w.OnRestore != nil {
 			w.OnRestore(w)
 		}
@@ -629,10 +681,17 @@ func (w *WinBox) Maximize() *WinBox {
 		removeMinStack(w)
 	}
 
+	if w.dock != EdgeNone {
+		w.Undock()
+	}
+
 	if !w.Max {
 		w.AddClass("max")
-		w.resizeRaw(rootW-w.Left-w.Right, rootH-w.Top-w.Bottom)
-		w.moveRaw(w.Left, w.Top)
+		// The area left by any reserving docks, which with none of them is the
+		// whole viewport and so the original's arithmetic exactly.
+		cx, cy, cw, ch := dockContentBox()
+		w.resizeRaw(cw-w.Left-w.Right, ch-w.Top-w.Bottom)
+		w.moveRaw(cx+w.Left, cy+w.Top)
 		w.Max = true
 		if w.OnMaximize != nil {
 			w.OnMaximize(w)
@@ -676,6 +735,16 @@ func (w *WinBox) Close(force bool) bool {
 
 	if w.Min {
 		removeMinStack(w)
+	}
+	if w.dock != EdgeNone {
+		w.dock = EdgeNone
+		for i, d := range stackDock {
+			if d == w {
+				stackDock = append(stackDock[:i], stackDock[i+1:]...)
+				break
+			}
+		}
+		defer updateDocks()
 	}
 
 	for i, s := range stackWin {

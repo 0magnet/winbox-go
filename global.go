@@ -64,7 +64,14 @@ func setup() {
 
 	addListener(window, "resize", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		initRoot()
-		updateMinStack()
+		// updateDocks re-places the docks against the new viewport and calls
+		// updateMinStack itself; with nothing docked it is the bare
+		// updateMinStack the original does here and nothing more.
+		if len(stackDock) > 0 {
+			updateDocks()
+		} else {
+			updateMinStack()
+		}
 		return nil
 	}), js.Undefined())
 
@@ -186,11 +193,17 @@ func updateMinStack() {
 		splitscreenLength[key]++
 	}
 
+	// Along the bottom of the area the docks leave, not of the raw viewport, so
+	// minimized windows stack above a bottom dock instead of underneath it.
+	// With nothing docked cx and cy are zero and cw/ch are the viewport, which
+	// is the original's arithmetic unchanged.
+	cx, cy, cw, ch := dockContentBox()
+
 	for _, w := range stackMin {
 		key := fmt.Sprintf("%v:%v", w.Left, w.Top)
-		width := math.Min((rootW-w.Left-w.Right)/splitscreenLength[key], 250)
+		width := math.Min((cw-w.Left-w.Right)/splitscreenLength[key], 250)
 		w.resizeRaw(math.Trunc(width+1), w.Header)
-		w.moveRaw(math.Trunc(w.Left+splitscreenIndex[key]*width), rootH-w.Bottom-w.Header)
+		w.moveRaw(math.Trunc(cx+w.Left+splitscreenIndex[key]*width), cy+ch-w.Bottom-w.Header)
 		splitscreenIndex[key]++
 	}
 }
@@ -235,6 +248,37 @@ func addWindowListener(w *WinBox, dir string) {
 		oldY := w.Y
 
 		var resizeW, resizeH, moveX, moveY bool
+
+		// A docked window answers the pointer differently: its one live handle
+		// sets the thickness, and dragging its title pulls it off the edge —
+		// the same way dragging a maximized window restores it below.
+		if w.dock != EdgeNone {
+			if dir != "drag" {
+				if dir != dockHandleFor(w.dock) {
+					return nil
+				}
+				// Tracked straight from the pointer rather than through
+				// Width/Height: those still hold the floating geometry Undock
+				// will restore, so deriving a delta from them would resize the
+				// dock to the wrong base and lose the window's old size.
+				switch w.dock {
+				case EdgeTop:
+					w.dockThick += offsetY
+				case EdgeBottom:
+					w.dockThick -= offsetY
+				case EdgeLeft:
+					w.dockThick += offsetX
+				case EdgeRight:
+					w.dockThick -= offsetX
+				case EdgeNone:
+				}
+				w.clampDockThick()
+				updateDocks()
+				x, y = pageX, pageY
+				return nil
+			}
+			w.Undock()
+		}
 
 		if dir == "drag" {
 			if w.HasClass("no-move") {

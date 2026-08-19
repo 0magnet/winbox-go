@@ -222,6 +222,29 @@ body > .wb-body{
 .winbox.max .wb-body {
   margin: 0 !important;
 }
+/* Docked: flush to an edge, so no shadow and no body margin, the same
+   reasoning as .max above. Only the one handle facing the content stays live —
+   the other seven would drag the window off its edge, and a resize cursor that
+   does nothing is worse than no cursor at all. */
+.winbox.dock {
+  box-shadow: none;
+}
+.winbox.dock .wb-body {
+  margin: 0 !important;
+}
+.winbox.dock .wb-body ~ div {
+  pointer-events: none;
+}
+/* Written in the same shape as the rule above, and one class heavier, so it
+   wins on specificity rather than on source order — the disabling selector
+   counts three classes and a type, so three classes alone would lose and every
+   handle including this one would stay dead. */
+.winbox.dock-top .wb-body ~ div.wb-s,
+.winbox.dock-bottom .wb-body ~ div.wb-n,
+.winbox.dock-left .wb-body ~ div.wb-e,
+.winbox.dock-right .wb-body ~ div.wb-w {
+  pointer-events: auto;
+}
 .winbox iframe {
   position: absolute;
   width: 100%;

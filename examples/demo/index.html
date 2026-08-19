@@ -44,9 +44,18 @@
   <button id="btn-iframe">iframe</button>
   <button id="btn-popup">Popup</button>
   <button id="btn-confirm">Close Confirmation</button>
+  <button id="btn-dock-left">Dock Left</button>
+  <button id="btn-dock-bottom">Dock Bottom</button>
+  <button id="btn-dock-overlay">Dock Right (overlay)</button>
+  <button id="btn-undock">Undock All</button>
 </div>
 <p class="hint">Drag titlebars, resize from all edges and corners, double-click a titlebar to maximize,
 minimize several windows to see the taskbar stacking. Every window on this page is managed by Go code.</p>
+<p class="hint">Docking is the one thing WinBox.js does not have, and it is opt-in. A docked window pins to an
+edge and keeps a fixed thickness; drag its inner edge to resize it, drag its titlebar to pull it off.
+By default it RESERVES its strip, so maximize a window and it fills what is left, and minimized windows
+stack above a bottom dock rather than under it. Dock several at once — each claims space inside what the
+earlier ones left, so they meet at corners instead of overlapping.</p>
 
 <div style="display: none">
   <div id="content">

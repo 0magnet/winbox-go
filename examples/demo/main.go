@@ -130,6 +130,48 @@ func main() {
 		})
 	})
 
+	// Docking — the one feature here that WinBox.js does not have. Each of
+	// these is an ordinary window that happens to be pinned to an edge; try
+	// maximizing another window afterwards to see the reserved area, and drag
+	// a dock's inner edge to resize it or its titlebar to pull it off.
+	var docks []*winbox.WinBox
+
+	onClick("btn-dock-left", func() {
+		docks = append(docks, winbox.New(&winbox.Options{
+			Title:    "Docked left",
+			HTML:     "<p style='padding:0 14px'>Reserving 260px.</p>" + lorem,
+			Dock:     winbox.EdgeLeft,
+			DockSize: winbox.Px(260),
+			MinWidth: winbox.Px(120),
+		}))
+	})
+
+	onClick("btn-dock-bottom", func() {
+		docks = append(docks, winbox.New(&winbox.Options{
+			Title:     "Docked bottom",
+			HTML:      "<p style='padding:0 14px'>Minimize a window — it stacks above this, not under it.</p>",
+			Dock:      winbox.EdgeBottom,
+			DockSize:  winbox.Px(180),
+			MinHeight: winbox.Px(80),
+		}))
+	})
+
+	onClick("btn-dock-overlay", func() {
+		docks = append(docks, winbox.New(&winbox.Options{
+			Title:    "Docked right (overlay)",
+			HTML:     "<p style='padding:0 14px'>Reserves nothing — maximize covers it.</p>" + lorem,
+			Dock:     winbox.EdgeRight,
+			DockSize: winbox.Pct(25),
+			DockMode: winbox.DockOverlay,
+		}))
+	})
+
+	onClick("btn-undock", func() {
+		for _, w := range docks {
+			w.Undock()
+		}
+	})
+
 	// keep the Go runtime alive so callbacks keep working
 	select {}
 }

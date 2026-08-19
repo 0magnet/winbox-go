@@ -227,6 +227,21 @@ Callbacks (assignable via `Options` or swapped on the instance at any time):
         <td>Shows the window as modal.</td>
     </tr>
     <tr>
+        <td>Dock</td>
+        <td>Edge</td>
+        <td>Pins the window to an edge of the viewport: <code>EdgeTop</code>, <code>EdgeRight</code>, <code>EdgeBottom</code>, <code>EdgeLeft</code>. The zero value <code>EdgeNone</code> leaves it floating. Not in WinBox.js — see <a href="#differences">Docking</a>.</td>
+    </tr>
+    <tr>
+        <td>DockSize</td>
+        <td>Unit</td>
+        <td>Thickness of the dock across its edge. Defaults to the window's extent along that axis.</td>
+    </tr>
+    <tr>
+        <td>DockMode</td>
+        <td>DockMode</td>
+        <td><code>DockReserve</code> (default) takes the dock's strip out of the viewport other windows see, so maximize fills what is left. <code>DockOverlay</code> leaves the viewport alone.</td>
+    </tr>
+    <tr>
         <td>Top<br>Right<br>Bottom<br>Left</td>
         <td>winbox.Unit</td>
         <td>Set or limit the viewport of the window's available area. Also used for custom splitscreen configurations.</td>
@@ -280,6 +295,16 @@ Callbacks (assignable via `Options` or swapped on the instance at any time):
         <td>OnRestore</td>
         <td>func(w *WinBox)</td>
         <td>Callback triggered when the window returns to a windowed state from a fullscreen, minimized or maximized state.</td>
+    </tr>
+    <tr>
+        <td>OnDock</td>
+        <td>func(w *WinBox, edge Edge)</td>
+        <td>Callback triggered when the window is docked to an edge. Not in WinBox.js.</td>
+    </tr>
+    <tr>
+        <td>OnUndock</td>
+        <td>func(w *WinBox)</td>
+        <td>Callback triggered when the window leaves its edge and returns to floating. Not in WinBox.js.</td>
     </tr>
     <tr>
         <td>OnHide<br>OnShow</td>
@@ -986,6 +1011,53 @@ winbox.New(&winbox.Options{
 - The DOM element's `winbox` property holds the window `ID` string rather than the instance; keep the `*WinBox` returned by `New` (or use `winbox.Stack()`) to control windows
 - The iframe `onload` callback is the window's `OnLoad` field instead of a `setUrl` parameter
 - The stylesheet (with icons inlined) is embedded and injected automatically; there are no separate js/css assets to load
+
+### Docking (an addition, not a port)
+
+Everything above is a difference in *how* WinBox.js is expressed in Go. Docking
+is the one thing here that WinBox.js does not have at all.
+
+It is opt-in, and the zero value of every type involved means "not docked", so
+a program that never mentions docking behaves exactly as it did before docking
+existed — maximize still fills the raw viewport, and minimized windows still
+stack along the bottom of it.
+
+```go
+panel := winbox.New(&winbox.Options{
+    Title:    "Controls",
+    Dock:     winbox.EdgeLeft,   // EdgeTop, EdgeRight, EdgeBottom, EdgeLeft
+    DockSize: winbox.Px(260),    // thickness across that edge
+})
+
+panel.Dock(winbox.EdgeBottom, winbox.Px(180)) // move it to another edge
+panel.Undock()                                // back to its pre-dock geometry
+```
+
+A docked window pins to its edge and stretches along it, keeping a fixed
+thickness. Drag the one handle facing the content to resize it; drag its
+titlebar to pull it off the edge, the way dragging a maximized window restores
+it. The other seven resize handles are inert while docked, in CSS as well as in
+code, so no cursor promises something that will not happen.
+
+By default a dock **reserves** its strip: `Maximize` fills what is left rather
+than covering the dock, and minimized windows stack inside that area instead of
+underneath it. `DockMode: winbox.DockOverlay` opts out, leaving the viewport
+alone so the dock sits over what is behind it.
+
+Dock several windows and each claims space inside what the earlier ones left, so
+a left dock and a bottom dock meet at a corner rather than overlapping it.
+Hiding, minimizing or closing a dock returns its strip to everyone else, and
+docks follow the viewport when the page is resized. (A *maximized* window does
+not follow a resize — that is WinBox.js's behaviour and it is kept — except
+where docks are involved, since a stale maximized window and a dock would
+otherwise overlap.)
+
+Per-window `Top`/`Right`/`Bottom`/`Left` offsets are ignored while docked: they
+exist to inset a floating window from the viewport, and a dock's whole job is to
+be against the edge.
+
+`OnDock`/`OnUndock` callbacks and the `Docked()`, `DockThickness()` and
+`SetDockThickness()` accessors round it out. See `dock.go`.
 
 ---
 

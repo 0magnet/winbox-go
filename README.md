@@ -1063,3 +1063,39 @@ be against the edge.
 
 winbox-go is a derivative work of <a href="https://github.com/nextapps-de/winbox">WinBox.js</a>, Copyright 2021-2023 Thomas Wilkerling, hosted by Nextapps GmbH.<br>
 Released under the <a href="http://www.apache.org/licenses/LICENSE-2.0.html" target="_blank">Apache 2.0 License</a><br>
+## Dependency Graph
+
+Made with [goda](https://github.com/loov/goda):
+
+```
+# GOOS=js: the import edges of a wasm program live in js/wasm-tagged
+# files and are invisible to a host-context run
+GOOS=js GOARCH=wasm go run github.com/loov/goda@latest graph github.com/0magnet/winbox-go/... | dot -Tsvg -o docs/winbox-go-goda-graph.svg
+```
+
+![Dependency Graph](docs/winbox-go-goda-graph.svg "github.com/0magnet/winbox-go Dependency Graph")
+
+## Lines of Code
+
+Made with [gocloc](https://github.com/hhatto/gocloc) (excludes `vendor/`, `node_modules/`, `.git/`):
+
+```
+gocloc --not-match-d='(vendor|node_modules|\.git)' .
+```
+
+```
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Go                               7            268            248           1572
+JavaScript                       2            117             82            935
+Markdown                         1            189              1            875
+CSS                              1              0             39            294
+HTML                             2              4              0            137
+YAML                             1              0              9             69
+JSON                             2              0              0             28
+Bourne Shell                     1              2              3             12
+-------------------------------------------------------------------------------
+TOTAL                           17            580            382           3922
+-------------------------------------------------------------------------------
+```

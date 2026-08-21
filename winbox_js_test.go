@@ -417,6 +417,64 @@ func TestMaximizeAndRestoreKeepTheOriginalGeometry(t *testing.T) {
 	}
 }
 
+// A window manager parks a minimized window in a slot along the bottom, and a
+// maximized one over the whole viewport, by the same move-and-resize path a
+// drag takes — so OnMove and OnResize fire for both. An app persisting geometry
+// from those callbacks, which is what they are for, needs to be able to tell
+// being PARKED from being ARRANGED, and Min and Max are the only signal there
+// is. They are therefore set BEFORE the window is parked, not after.
+//
+// The failure this pins down was not theoretical: a control panel saved the
+// minimize slot as its remembered size, came back from the minimize as a bare
+// title bar, and came back that way on every later load, because 251x35 had
+// been written to localStorage.
+func TestParkingDoesNotLookLikeAnArrangementToACallback(t *testing.T) {
+	fresh(t)
+	// What is saved is what the callback was TOLD, not what the window has
+	// stored: the raw path leaves the stored geometry alone, so an app reading
+	// w.Width would never have seen this — and would also never know the window
+	// had been dragged, which is the whole reason to have the arguments.
+	saved := [4]float64{}
+	w := New(&Options{
+		Title: "a", Width: Px(400), Height: Px(300),
+		OnMove: func(w *WinBox, x, y float64) {
+			if w.Min || w.Max {
+				return // parked by the manager, not placed by the person
+			}
+			saved[0], saved[1] = x, y
+		},
+		OnResize: func(w *WinBox, wd, h float64) {
+			if w.Min || w.Max {
+				return
+			}
+			saved[2], saved[3] = wd, h
+		},
+	})
+	w.Move(Px(50), Px(60))
+	want := [4]float64{50, 60, 400, 300}
+	if saved != want {
+		t.Fatalf("after arranging, saved %v, want %v", saved, want)
+	}
+
+	w.Minimize()
+	if saved != want {
+		t.Errorf("minimizing overwrote the saved geometry with %v, want %v left alone", saved, want)
+	}
+	w.Restore()
+	if saved != want {
+		t.Errorf("after a minimize round trip, saved %v, want %v", saved, want)
+	}
+
+	w.Maximize()
+	if saved != want {
+		t.Errorf("maximizing overwrote the saved geometry with %v, want %v left alone", saved, want)
+	}
+	w.Restore()
+	if saved != want {
+		t.Errorf("after a maximize round trip, saved %v, want %v", saved, want)
+	}
+}
+
 // ── CSS ──────────────────────────────────────────────────────────────────────
 
 // The stylesheet goes in once however many windows are built. Counted by its

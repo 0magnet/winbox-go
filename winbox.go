@@ -610,15 +610,24 @@ func (w *WinBox) Minimize() *WinBox {
 	}
 
 	if !w.Min {
+		// THE FLAG GOES UP BEFORE ANYTHING MOVES THE WINDOW. updateMinStack parks
+		// a minimized window in its slot along the bottom by the same path a drag
+		// takes, so OnMove and OnResize fire with the SLOT's geometry — a title
+		// bar's worth of height, at the left edge. Persisting geometry from those
+		// callbacks is what they are for, and with the flag still false there was
+		// no way for a callback to tell being PARKED from being ARRANGED: an app
+		// saved the slot as the window's remembered size, the window came back
+		// from the minimize as a bare title bar, and it came back that way on
+		// every later load too, because the wrong size had been written to
+		// storage. Setting Min first is the whole fix.
 		stackMin = append(stackMin, w)
-		updateMinStack()
-		w.DOM.Set("title", w.Title)
 		w.AddClass("min")
 		w.Min = true
+		updateMinStack()
+		w.DOM.Set("title", w.Title)
 
 		// A minimized dock stops reserving its strip, so the docks behind it and
-		// the content area both grow. updateMinStack ran above with w.Min still
-		// false, so this also re-runs it with the truth.
+		// the content area both grow.
 		if w.dock != EdgeNone {
 			updateDocks()
 		}
@@ -687,12 +696,16 @@ func (w *WinBox) Maximize() *WinBox {
 
 	if !w.Max {
 		w.AddClass("max")
+		// Before the raw calls, for the reason spelled out in Minimize: these
+		// fire OnResize and OnMove, and an app that persists what they report
+		// would remember the whole viewport as the window's own size — after
+		// which Restore has nothing smaller to go back to.
+		w.Max = true
 		// The area left by any reserving docks, which with none of them is the
 		// whole viewport and so the original's arithmetic exactly.
 		cx, cy, cw, ch := dockContentBox()
 		w.resizeRaw(cw-w.Left-w.Right, ch-w.Top-w.Bottom)
 		w.moveRaw(cx+w.Left, cy+w.Top)
-		w.Max = true
 		if w.OnMaximize != nil {
 			w.OnMaximize(w)
 		}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>winbox-go — WinBox.js ported to Go/WebAssembly</title>
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    padding: 40px;
+    box-sizing: border-box;
+    background: #0d1117;
+    color: #fff;
+    font-family: Arial, sans-serif;
+  }
+  h1 { margin-top: 0; }
+  a { color: #7bb2ff; }
+  .buttons { max-width: 720px; }
+  button {
+    margin: 4px 6px 4px 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 6px;
+    background: #0050ff;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { background: #2a6dff; }
+  .hint { color: #8b949e; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>winbox-go</h1>
+<p><a href="https://github.com/nextapps-de/winbox">WinBox.js</a> fully ported to Go, compiled to WebAssembly —
+<a href="https://github.com/0magnet/winbox-go">github.com/0magnet/winbox-go</a></p>
+<div class="buttons">
+  <button id="btn-basic">Basic Window</button>
+  <button id="btn-color">Custom Color</button>
+  <button id="btn-modal">Modal</button>
+  <button id="btn-limits">Limited Viewport</button>
+  <button id="btn-mount">Mount DOM</button>
+  <button id="btn-iframe">iframe</button>
+  <button id="btn-popup">Popup</button>
+  <button id="btn-confirm">Close Confirmation</button>
+</div>
+<p class="hint">Drag titlebars, resize from all edges and corners, double-click a titlebar to maximize,
+minimize several windows to see the taskbar stacking. Every window on this page is managed by Go code.</p>
+
+<div style="display: none">
+  <div id="content">
+    <h2 style="padding: 0 14px">Mounted Fragment</h2>
+    <p style="padding: 0 14px">This content was cloned from a hidden element in the page and mounted
+    into the window body by Go.</p>
+  </div>
+</div>
+
+<script src="wasm_exec.js"></script>
+<script>
+  const go = new Go();
+  WebAssembly.instantiateStreaming(fetch("demo.wasm"), go.importObject)
+    .then(result => go.run(result.instance));
+</script>
+</body>
+</html>

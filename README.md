@@ -789,7 +789,7 @@ WinBox provides built-in control classes you can pass when creating a window ins
 
 > Without the header the user isn't able to move the window frame. It may be useful for creating fixed popups.
 
-Pass in classnames when creating the window to apply behaviour:
+Pass in classnames when creating the window to apply behavior:
 ```go
 winbox.New(&winbox.Options{
     Class: []string{"no-min", "no-max", "no-full", "no-resize", "no-move"},
@@ -1118,7 +1118,7 @@ Dock several windows and each claims space inside what the earlier ones left, so
 a left dock and a bottom dock meet at a corner rather than overlapping it.
 Hiding, minimizing or closing a dock returns its strip to everyone else, and
 docks follow the viewport when the page is resized. (A *maximized* window does
-not follow a resize — that is WinBox.js's behaviour and it is kept — except
+not follow a resize — that is WinBox.js's behavior and it is kept — except
 where docks are involved, since a stale maximized window and a dock would
 otherwise overlap.)
 

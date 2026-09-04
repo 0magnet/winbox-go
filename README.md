@@ -16,6 +16,8 @@ If you find the underlying window manager useful, consider [supporting the origi
 
 <a href="https://0magnet.github.io/winbox-go/">https://0magnet.github.io/winbox-go/</a> (compiled with TinyGo)
 
+![winbox-go in the browser](docs/winbox-go-demo.png "windows with drag, resize, minimize and the split-screen taskbar, drawn from Go")
+
 <a name="started"></a>
 ## Getting Started
 

@@ -110,7 +110,7 @@ func TestFalseArgOnlyMatchesLiteralFalse(t *testing.T) {
 	// than a literal false — a missing argument, 0, "" — must not be read as
 	// the toggle-off form.
 	if !falseArg([]js.Value{js.ValueOf(false)}) {
-		t.Fatal("literal false was not recognised")
+		t.Fatal("literal false was not recognized")
 	}
 	for _, v := range []any{true, 0, "", nil, 1} {
 		if falseArg([]js.Value{js.ValueOf(v)}) {

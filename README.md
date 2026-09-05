@@ -1034,7 +1034,7 @@ The option keys, methods, instance properties and callbacks are the ones
 WinBox.js documents, with the loose argument forms it accepts: `width: 250`,
 `"250"`, `"250px"` and `"40%"` all work, `class` takes a string or an array,
 `minimize(false)` restores, `close()` returns `true` only when an `onclose`
-handler cancelled it, and callbacks are invoked with `this` bound to the
+handler canceled it, and callbacks are invoked with `this` bound to the
 instance and may be reassigned at any time. The root element is exposed as
 `g`, `window` **and** `dom`, so code that identifies a window by matching a DOM
 node against any one of those aliases finds it.

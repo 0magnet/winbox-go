@@ -4,6 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>winbox-go — WinBox.js ported to Go/WebAssembly</title>
+<!-- seo:begin -->
+<meta name="description" content="A Go port of WinBox.js compiled to WebAssembly: draggable, 8-direction resizable windows with minimize, maximize, fullscreen, modals and iframes — self-contained, with no JavaScript dependency.">
+<meta name="author" content="0magnet">
+<link rel="canonical" href="https://winbox-go.magnetosphere.net/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="magnetosphere">
+<meta property="og:title" content="winbox-go — a Go port of WinBox.js, the HTML5 window manager">
+<meta property="og:description" content="A Go port of WinBox.js compiled to WebAssembly: draggable, 8-direction resizable windows with minimize, maximize, fullscreen, modals and iframes — self-contained, with no JavaScript dependency.">
+<meta property="og:url" content="https://winbox-go.magnetosphere.net/">
+<meta property="og:image" content="https://winbox-go.magnetosphere.net/winbox-go-demo.png">
+<meta property="og:image:alt" content="Draggable, resizable HTML5 windows with taskbar stacking, drawn by a Go program">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="winbox-go — a Go port of WinBox.js, the HTML5 window manager">
+<meta name="twitter:description" content="A Go port of WinBox.js compiled to WebAssembly: draggable, 8-direction resizable windows with minimize, maximize, fullscreen, modals and iframes — self-contained, with no JavaScript dependency.">
+<meta name="twitter:image" content="https://winbox-go.magnetosphere.net/winbox-go-demo.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","applicationCategory":"DeveloperApplication","author":{"@type":"Person","name":"0magnet"},"browserRequirements":"Requires WebAssembly","description":"A Go port of WinBox.js compiled to WebAssembly: draggable, 8-direction resizable windows with minimize, maximize, fullscreen, modals and iframes — self-contained, with no JavaScript dependency.","image":"https://winbox-go.magnetosphere.net/winbox-go-demo.png","isAccessibleForFree":true,"name":"winbox-go — a Go port of WinBox.js, the HTML5 window manager","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Any (modern web browser)","sameAs":"https://github.com/0magnet/winbox-go","url":"https://winbox-go.magnetosphere.net/"}
+</script>
+<!-- seo:end -->
 <style>
   html, body { height: 100%; }
   body {
@@ -32,6 +51,14 @@
 </style>
 </head>
 <body>
+<!-- seo:begin -->
+<div style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+<h1>winbox-go — an HTML5 window manager in Go</h1>
+<p>A complete Go port of Thomas Wilkerling&#39;s WinBox.js, targeting WebAssembly through syscall/js. It builds with both the standard Go toolchain and TinyGo, and ports the whole feature set: drag, 8-direction resize, minimize with split-screen taskbar stacking, maximize, browser fullscreen, modals, DOM mount and unmount, iframes, custom controls and templates, viewport limits, percentage and centered positioning, and every lifecycle callback.</p>
+<p>The library is self-contained. The stylesheet is embedded in the Go binary with all control icons inlined as data URIs and injected when the first window is created, so there are no extra assets to serve.</p>
+<p>Source code: <a href="https://github.com/0magnet/winbox-go">github.com/0magnet/winbox-go</a>. More Go and WebAssembly projects: <a href="https://magnetosphere.net/software">magnetosphere.net/software</a>.</p>
+</div>
+<!-- seo:end -->
 <h1>winbox-go</h1>
 <p><a href="https://github.com/nextapps-de/winbox">WinBox.js</a> fully ported to Go, compiled to WebAssembly —
 <a href="https://github.com/0magnet/winbox-go">github.com/0magnet/winbox-go</a></p>

@@ -235,6 +235,13 @@ func addWindowListener(w *WinBox, dir string) {
 	mousemoveFn = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		event := args[0]
 		preventEvent(event, false)
+		// The shield goes up on the first MOVE, not on mousedown: a drag has not
+		// begun until the pointer moves, and raising it any earlier ate the
+		// click. Every tab button lives inside .wb-drag, so pressing one armed a
+		// drag, the sheet went up under the pointer, and the mouseup landed on
+		// the sheet instead of the button — no click, and no way to switch or
+		// open a tab in any window. Idempotent, so every later move is a no-op.
+		showDragShield()
 
 		if touch {
 			event = event.Get("touches").Index(0)
@@ -437,7 +444,6 @@ func addWindowListener(w *WinBox, dir string) {
 
 		if !w.Min {
 			addClass(body, "wb-lock")
-			showDragShield()
 
 			touches := event.Get("touches")
 			if touches.Truthy() && touches.Index(0).Truthy() {

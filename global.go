@@ -485,13 +485,19 @@ func cancelFullscreen() bool {
 // dragShield is a transparent sheet laid over the whole viewport while a
 // window is being dragged or resized.
 //
-// Drag binds mousemove AND mouseup to this window. A frame is its own browsing
-// context and swallows both, so the moment the pointer crossed any window's
-// iframe mid-drag the parent stopped seeing the pointer — and because the
-// mouseup landed inside the frame too, the drag never ENDED: the window stayed
-// stuck to the cursor until the next click outside a frame. Dragging one
-// window across another is ordinary use, so this was reachable with two
-// windows open and a frame in either.
+// Drag binds mousemove AND mouseup to this window, and a frame is its own
+// browsing context that swallows both — so a pointer held over a foreign frame
+// mid-drag would strand it: the mouseup never arrives and the window stays
+// stuck to the cursor.
+//
+// DEFENSIVE, and honestly so. That scenario was reasoned from the bindings,
+// not reproduced. Driving trusted input at it showed an ordinary window drag
+// cannot reach it — the dragged window tracks the pointer, so the pointer
+// stays over the window being dragged and never enters anyone else's frame;
+// suppressing this sheet and repeating the drag changed nothing. What is not
+// ruled out is the pointer outrunning the window: a viewport clamp, a small
+// window, a flick, or a resize that leaves the pointer off the edge. The sheet
+// costs one element for the length of a drag and removes the question.
 //
 // The sheet sits above every window (z-index is assigned from indexCounter,
 // which counts up from 10) and takes the pointer itself, so it never reaches a

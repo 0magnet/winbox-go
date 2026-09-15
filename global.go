@@ -235,13 +235,6 @@ func addWindowListener(w *WinBox, dir string) {
 	mousemoveFn = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		event := args[0]
 		preventEvent(event, false)
-		// The shield goes up on the first MOVE, not on mousedown: a drag has not
-		// begun until the pointer moves, and raising it any earlier ate the
-		// click. Every tab button lives inside .wb-drag, so pressing one armed a
-		// drag, the sheet went up under the pointer, and the mouseup landed on
-		// the sheet instead of the button — no click, and no way to switch or
-		// open a tab in any window. Idempotent, so every later move is a no-op.
-		showDragShield()
 
 		if touch {
 			event = event.Get("touches").Index(0)
@@ -400,7 +393,6 @@ func addWindowListener(w *WinBox, dir string) {
 	mouseupFn = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		preventEvent(args[0], false)
 		removeClass(body, "wb-lock")
-		hideDragShield()
 
 		if touch {
 			removeListener(window, "touchmove", mousemoveFn, eventOptionsPassive)
@@ -488,50 +480,17 @@ func cancelFullscreen() bool {
 	return false
 }
 
-// dragShield is a transparent sheet laid over the whole viewport while a
-// window is being dragged or resized.
+// Frames are made inert for the length of a drag by CSS, not by an overlay:
+// "body.wb-lock iframe { pointer-events: none }" in winbox.css, with wb-lock
+// added on mousedown and removed on mouseup. That is what keeps a pointer with
+// the button down from being captured by a frame — which would otherwise take
+// the mouseup with it and strand the drag.
 //
-// Drag binds mousemove AND mouseup to this window, and a frame is its own
-// browsing context that swallows both — so a pointer held over a foreign frame
-// mid-drag would strand it: the mouseup never arrives and the window stays
-// stuck to the cursor.
-//
-// DEFENSIVE, and honestly so. That scenario was reasoned from the bindings,
-// not reproduced. Driving trusted input at it showed an ordinary window drag
-// cannot reach it — the dragged window tracks the pointer, so the pointer
-// stays over the window being dragged and never enters anyone else's frame;
-// suppressing this sheet and repeating the drag changed nothing. What is not
-// ruled out is the pointer outrunning the window: a viewport clamp, a small
-// window, a flick, or a resize that leaves the pointer off the edge. The sheet
-// costs one element for the length of a drag and removes the question.
-//
-// The sheet sits above every window (z-index is assigned from indexCounter,
-// which counts up from 10) and takes the pointer itself, so it never reaches a
-// frame. Put up on drag start, taken down on drag end; while it is up, the
-// window's own mousemove handler keeps working, because those events are still
-// delivered to this document.
-var dragShieldEl js.Value
-
-func showDragShield() {
-	if dragShieldEl.Truthy() {
-		return
-	}
-	el := document.Call("createElement", "div")
-	el.Get("style").Set("cssText",
-		"position:fixed;inset:0;z-index:2147483647;background:transparent;cursor:inherit")
-	body.Call("appendChild", el)
-	dragShieldEl = el
-}
-
-func hideDragShield() {
-	if !dragShieldEl.Truthy() {
-		return
-	}
-	if p := dragShieldEl.Get("parentNode"); p.Truthy() {
-		p.Call("removeChild", dragShieldEl)
-	}
-	dragShieldEl = js.Undefined()
-}
+// A viewport-covering shield element was added here for that job and removed
+// again: it duplicated this rule, and because it went up on mousedown it sat
+// under the pointer before the click completed. Every tab button lives inside
+// .wb-drag, so pressing one armed a drag and the mouseup landed on the sheet
+// instead of the button — no tab switching, and no new tabs, anywhere.
 
 // focusWindowOwning raises the window that contains el, if it is not already
 // the focused one. Walks up from el because the click reaches us from inside a

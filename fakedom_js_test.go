@@ -128,6 +128,14 @@ const fakeDOMSource = `
       return c;
     };
 
+    // parentElement, which is what production code walks to find the element
+    // an event or a focus landed inside. The real DOM has both this and
+    // parentNode; only parentNode was modelled here, so a walk up the tree
+    // stopped at the first step.
+    Object.defineProperty(e, "parentElement", {
+      get: function () { return this.parentNode || null; },
+    });
+
     // innerHTML, enough of it for the window template: a tree of <div> and
     // <span> with an unquoted class attribute and no text content. Anything
     // else throws rather than silently building the wrong tree.

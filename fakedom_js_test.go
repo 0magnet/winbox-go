@@ -196,6 +196,22 @@ const fakeDOMSource = `
   doc.head = El("head");
   doc.body = El("body");
   doc.createElement = function (tag) { return El(tag); };
+  // getElementsByTagName, walking every root the way a document does — the
+  // frame wiring sweeps for iframes with it, and they hang off window bodies
+  // rather than off doc.body.
+  doc.getElementsByTagName = function (tag) {
+    var want = String(tag).toUpperCase(), hits = [];
+    [doc, doc.body, doc.head, doc.documentElement].forEach(function (r) {
+      if (!r) return;
+      (function walk(n) {
+        for (var i = 0; i < n.children.length; i++) {
+          if (n.children[i].tagName === want && hits.indexOf(n.children[i]) < 0) hits.push(n.children[i]);
+          walk(n.children[i]);
+        }
+      })(r);
+    });
+    return hits;
+  };
   doc.createTextNode = function (t) { var e = El("#text"); e.textContent = t; return e; };
   doc.getElementById = function (id) {
     var hit = null;

@@ -130,7 +130,7 @@ const fakeDOMSource = `
 
     // parentElement, which is what production code walks to find the element
     // an event or a focus landed inside. The real DOM has both this and
-    // parentNode; only parentNode was modelled here, so a walk up the tree
+    // parentNode; only parentNode was modeled here, so a walk up the tree
     // stopped at the first step.
     Object.defineProperty(e, "parentElement", {
       get: function () { return this.parentNode || null; },
